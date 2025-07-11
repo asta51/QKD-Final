@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Quantum Security Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: sans-serif; background: #111; color: #fff; padding: 20px; }
+    canvas { background: #222; padding: 10px; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>🔍 Quantum-Secured Monitoring Dashboard</h1>
+
+  <h2>Anomalies (Last 10)</h2>
+  <canvas id="anomalyChart" width="600" height="300"></canvas>
+
+  <h2>Intrusions (Last 10)</h2>
+  <canvas id="intrusionChart" width="600" height="300"></canvas>
+
+  <script>
+    async function fetchAndDraw() {
+      const anomalyResp = await fetch('/anomalies');
+      const anomalies = await anomalyResp.json();
+
+      const intrusionResp = await fetch('/intrusions');
+      const intrusions = await intrusionResp.json();
+
+      const ctxA = document.getElementById('anomalyChart').getContext('2d');
+      const ctxI = document.getElementById('intrusionChart').getContext('2d');
+
+      new Chart(ctxA, {
+        type: 'line',
+        data: {
+          labels: anomalies.map(a => a.timestamp),
+          datasets: [{
+            label: 'Z-Score',
+            data: anomalies.map(a => a.score),
+            borderColor: 'orange',
+            tension: 0.2
+          }]
+        }
+      });
+
+      new Chart(ctxI, {
+        type: 'bar',
+        data: {
+          labels: intrusions.map(i => i.timestamp),
+          datasets: [{
+            label: 'Confidence',
+            data: intrusions.map(i => i.result.confidence),
+            backgroundColor: 'red'
+          }]
+        }
+      });
+    }
+
+    fetchAndDraw();
+    setInterval(fetchAndDraw, 10000);  // auto-refresh every 10 seconds
+  </script>
+</body>
+</html>

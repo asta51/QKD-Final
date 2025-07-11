@@ -1,0 +1,132 @@
+<!-- templates/dashboard.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quantum Security Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .panel { background: #f5f5f5; border-radius: 8px; padding: 15px; }
+        .alert-panel { background: #fff3cd; grid-column: span 2; }
+        .anomaly { color: #dc3545; font-weight: bold; }
+        .chart-container { height: 300px; margin-top: 15px; }
+        .stats { display: flex; justify-content: space-between; }
+        .stat-box { background: white; padding: 10px; border-radius: 5px; text-align: center; }
+    </style>
+</head>
+<body>
+    <h1>Quantum-Secure Communication Monitor</h1>
+    <div class="dashboard">
+        <div class="panel">
+            <h2>Connection Statistics</h2>
+            <div class="stats">
+                <div class="stat-box">
+                    <div class="stat-value" id="current-conn">0</div>
+                    <div>Active Connections</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="total-conn">0</div>
+                    <div>Total Connections</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="throughput">0</div>
+                    <div>Packets/Min</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="panel">
+            <h2>Performance Metrics</h2>
+            <div class="stats">
+                <div class="stat-box">
+                    <div class="stat-value" id="avg-packet">0</div>
+                    <div>Avg Packet Size</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="avg-time">0</div>
+                    <div>Avg Proc Time (ms)</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="panel alert-panel">
+            <h2>Security Alerts</h2>
+            <div id="alerts-container"></div>
+        </div>
+        
+        <div class="panel">
+            <h2>Packet Size Distribution</h2>
+            <div class="chart-container">
+                <canvas id="sizeChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="panel">
+            <h2>Processing Times</h2>
+            <div class="chart-container">
+                <canvas id="timeChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize charts
+        const sizeCtx = document.getElementById('sizeChart').getContext('2d');
+        const timeCtx = document.getElementById('timeChart').getContext('2d');
+        
+        const sizeChart = new Chart(sizeCtx, {
+            type: 'line',
+            data: { datasets: [{ label: 'Packet Size', borderColor: 'rgb(75, 192, 192)' }] },
+            options: { responsive: true, scales: { y: { beginAtZero: true } } }
+        });
+        
+        const timeChart = new Chart(timeCtx, {
+            type: 'line',
+            data: { datasets: [{ label: 'Processing Time (ms)', borderColor: 'rgb(153, 102, 255)' }] },
+            options: { responsive: true, scales: { y: { beginAtZero: true } } }
+        });
+
+        // Socket.io connection
+        const socket = io();
+        
+        // Update data
+        function updateData() {
+            fetch('/data')
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('current-conn').textContent = data.connections;
+                    document.getElementById('total-conn').textContent = data.total_connections;
+                    document.getElementById('throughput').textContent = data.throughput;
+                    document.getElementById('avg-packet').textContent = Math.round(data.avg_packet);
+                    document.getElementById('avg-time').textContent = (data.avg_time * 1000).toFixed(2);
+                    
+                    // Update charts
+                    sizeChart.data.labels = Array.from({length: data.packet_sizes.length}, (_, i) => i);
+                    sizeChart.data.datasets[0].data = data.packet_sizes;
+                    sizeChart.update();
+                    
+                    timeChart.data.labels = Array.from({length: data.processing_times.length}, (_, i) => i);
+                    timeChart.data.datasets[0].data = data.processing_times.map(t => t * 1000);
+                    timeChart.update();
+                });
+        }
+        
+        // Handle real-time updates
+        socket.on('update', () => updateData());
+        
+        // Handle anomalies
+        socket.on('anomaly', data => {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'anomaly';
+            alertDiv.innerHTML = `[${data.time}] Anomaly detected with score: ${data.score.toFixed(2)}`;
+            document.getElementById('alerts-container').prepend(alertDiv);
+        });
+        
+        // Initial load and periodic refresh
+        updateData();
+        setInterval(updateData, 1000);
+    </script>
+</body>
+</html>
