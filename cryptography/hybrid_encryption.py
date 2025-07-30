@@ -40,3 +40,11 @@ class HybridEncryption:
         key = self._derive_key()
         cipher = AES.new(key, AES.MODE_GCM, nonce=nonce)
         return unpad(cipher.decrypt_and_verify(ciphertext, tag), AES.block_size).decode('utf-8')
+
+    def encrypt_bytes(self, data: bytes) -> bytes:
+        encoded = base64.b64encode(data).decode('utf-8')
+        return self.encrypt(encoded).encode('utf-8')
+
+    def decrypt_bytes(self, encrypted_data: bytes) -> bytes:
+        decrypted = self.decrypt(encrypted_data.decode('utf-8'))
+        return base64.b64decode(decrypted.encode('utf-8'))
