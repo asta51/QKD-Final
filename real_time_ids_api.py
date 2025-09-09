@@ -8,7 +8,7 @@ import csv
 from datetime import datetime
 
 # === Load Trained Model ===
-model = joblib.load("/ai_models/qkd_ids_model.pkl")
+model = joblib.load("ai_models/qkd_ids_model.pkl")
 print("[✓] Model loaded")
 
 # === Global Flow Storage and Lock ===
@@ -17,7 +17,7 @@ flow_lock = threading.Lock()
 flow_timeout = 5  # seconds
 
 # === CSV Log File ===
-LOG_FILE = "/ai_models/flow_log.csv"
+LOG_FILE = "ai_models/flow_log.csv"
 
 # Write CSV header if not exists
 with open(LOG_FILE, "w", newline="") as f:
